@@ -2,7 +2,7 @@ node_modules/
 .next/
 out/
 coverage/
-storage/
+/storage/
 test-results/
 playwright-report/
 .env
@@ -12,6 +12,6 @@ playwright-report/
 next-env.d.ts
 .DS_Store
 .tesseract-cache/
-storage-test/
-storage-e2e/
+/storage-test/
+/storage-e2e/
 *.tmp.ts
