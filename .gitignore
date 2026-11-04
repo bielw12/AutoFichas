@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+coverage/
+storage/
+test-results/
+playwright-report/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+.tesseract-cache/
+storage-test/
+storage-e2e/
+*.tmp.ts

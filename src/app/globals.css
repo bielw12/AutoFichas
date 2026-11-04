@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope Variable", "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-brand-50: #eef4fb;
+  --color-brand-100: #d9e6f5;
+  --color-brand-200: #b6cdea;
+  --color-brand-300: #82a9d7;
+  --color-brand-400: #4f82bf;
+  --color-brand-500: #2d63a6;
+  --color-brand-600: #24528c;
+  --color-brand-700: #1e4373;
+  --color-brand-800: #18365c;
+  --color-brand-900: #10253f;
+  --color-brand-950: #0a1729;
+
+  --color-sun-50: #fefbe8;
+  --color-sun-100: #fdf3c1;
+  --color-sun-200: #fbe68a;
+  --color-sun-300: #f8d64a;
+  --color-sun-400: #f4c91c;
+  --color-sun-500: #e2b20b;
+  --color-sun-600: #b88a06;
+
+  --color-canvas: #f3f5f9;
+  --color-line: #e2e7ef;
+  --color-ink: #0f1a2b;
+  --color-ink-soft: #3c4a5e;
+  --color-muted: #66728a;
+
+  --radius-card: 14px;
+  --shadow-card: 0 1px 2px rgb(15 26 43 / 0.04), 0 1px 1px rgb(15 26 43 / 0.03);
+  --shadow-pop: 0 10px 30px -8px rgb(15 26 43 / 0.18), 0 2px 6px rgb(15 26 43 / 0.06);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  ::selection {
+    background: var(--color-sun-200);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.55;
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+}
+
+@keyframes af-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+.af-indeterminate {
+  animation: af-indeterminate 1.4s ease-in-out infinite;
+}
+@keyframes af-shimmer {
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .af-indeterminate { animation-duration: 4s; }
+}
