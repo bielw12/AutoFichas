@@ -7,7 +7,7 @@ Sistema web para **criar, gerenciar, armazenar e consultar fichas cadastrais de 
 | | |
 |---|---|
 | **Stack** | Next.js 15 (App Router, Server Actions, Route Handlers) · React 19 · TypeScript · Tailwind CSS 4 · componentes no padrão shadcn/ui (Radix) |
-| **Banco** | PostgreSQL (local ou **Supabase**) · Drizzle ORM · migrations versionadas |
+| **Banco** | PostgreSQL (local, **Supabase** ou embutido via PGlite para testes) · Drizzle ORM · migrations versionadas |
 | **Arquivos** | Armazenamento privado (disco local ou **Supabase Storage**) com criptografia AES‑256‑GCM opcional |
 | **IA / OCR** | Arquitetura de provedores intercambiáveis: **Anthropic Claude** (recomendado), **OpenAI** ou **OCR local Tesseract** |
 | **PDF** | HTML/CSS renderizado no servidor via Chromium (Playwright) + `pdf-lib` para anexar os originais |
@@ -19,15 +19,16 @@ Sistema web para **criar, gerenciar, armazenar e consultar fichas cadastrais de 
 
 1. [Funcionalidades](#funcionalidades)
 2. [Requisitos](#requisitos)
-3. [Instalação e execução local](#instalação-e-execução-local)
-4. [Banco de dados e migrations](#banco-de-dados-e-migrations)
-5. [Supabase](#supabase)
-6. [Inteligência artificial](#inteligência-artificial)
-7. [Armazenamento de arquivos](#armazenamento-de-arquivos)
-8. [Testes](#testes)
-9. [Deploy](#deploy)
-10. [Segurança e LGPD](#segurança-e-lgpd)
-11. [Estrutura do projeto](#estrutura-do-projeto)
+3. [Início rápido (teste local)](#início-rápido-teste-local-sem-login-e-sem-instalar-banco)
+4. [Instalação com PostgreSQL e login](#instalação-com-postgresql-e-login-produção)
+5. [Banco de dados e migrations](#banco-de-dados-e-migrations)
+6. [Supabase](#supabase)
+7. [Inteligência artificial](#inteligência-artificial)
+8. [Armazenamento de arquivos](#armazenamento-de-arquivos)
+9. [Testes](#testes)
+10. [Deploy](#deploy)
+11. [Segurança e LGPD](#segurança-e-lgpd)
+12. [Estrutura do projeto](#estrutura-do-projeto)
 
 Documentação complementar: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) · [`docs/INTEGRACOES-E-APIS.md`](docs/INTEGRACOES-E-APIS.md)
 
@@ -52,22 +53,16 @@ Documentação complementar: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) · [`d
 
 ## Requisitos
 
-- **Node.js 20.11+** (testado com 22) e npm
-- **PostgreSQL 14+** (local, Docker ou Supabase)
-- **Chromium** para gerar PDFs no servidor: `npx playwright install chromium` (ou defina `PDF_CHROMIUM_EXECUTABLE`)
+- **Node.js 20.11+** (testado com 22) e npm — Windows, macOS ou Linux
+- **Chromium** para gerar os PDFs no servidor: `npx playwright install chromium`
+- **Banco:** nenhum para testes locais (PostgreSQL embutido). Para produção: PostgreSQL 14+ (local, Docker ou Supabase).
 - Opcional: `poppler-utils` (`pdftoppm`) para OCR local de PDFs digitalizados; ClamAV para antivírus.
 
 ---
 
-## Instalação e execução local
+## Início rápido (teste local, sem login e sem instalar banco)
 
-```bash
-git clone <repositório> autofichas
-```
-
-```bash
-cd autofichas
-```
+No terminal (PowerShell, CMD ou bash), dentro da pasta do projeto:
 
 ```bash
 npm install
@@ -77,11 +72,48 @@ npm install
 npx playwright install chromium
 ```
 
+Copie o arquivo de exemplo de configuração (no Windows CMD use `copy`; no PowerShell/macOS/Linux, `cp`):
+
+```bash
+copy .env.example .env
+```
+
+```bash
+npm run dev
+```
+
+Abra **http://localhost:3000**. Não há tela de login: com `AUTH_DISABLED=true` (padrão do `.env.example`) o sistema usa um usuário local com perfil de administrador.
+
+O que acontece automaticamente:
+
+- **Banco embutido:** com `DATABASE_URL` vazio, o app usa um PostgreSQL embutido (PGlite) gravado em `./data/pglite`, e as migrations rodam sozinhas ao iniciar.
+- **Arquivos** ficam em `./storage`, e o segredo das URLs temporárias é gerado em `./data/.app-secret`.
+- **Extração de dados:** `AI_PROVIDER=local` (OCR no próprio computador). Para usar o Claude, defina `AI_PROVIDER=anthropic` e `ANTHROPIC_API_KEY`, e autorize o envio externo em *Configurações → Inteligência artificial*.
+
+Primeiros passos:
+
+1. Abra **Configurações → Sistema e identidade** e envie o **logotipo** e as **informações padrão**: nome, telefones, e-mails, site e texto do rodapé. Eles entram automaticamente no rodapé de todas as fichas e aparecem na barra lateral do sistema.
+2. Clique em **Nova ficha cadastral**, escolha *Motorista* ou *Veículo* e envie os documentos.
+
+> O servidor escuta apenas em `127.0.0.1`, porque sem login qualquer pessoa com acesso à porta usaria o sistema. Para reiniciar do zero, pare o servidor e apague as pastas `data` e `storage`.
+
+---
+
+## Instalação com PostgreSQL e login (produção)
+
 ```bash
 cp .env.example .env
 ```
 
-Edite o `.env` e preencha no mínimo `APP_SECRET`, `DATABASE_URL`, `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` e (recomendado) `STORAGE_ENCRYPTION_KEY`. Os comandos para gerar segredos estão comentados no próprio arquivo.
+No `.env`, defina:
+
+- `AUTH_DISABLED=false`
+- `APP_SECRET`
+- `DATABASE_URL` (PostgreSQL ou Supabase)
+- `ADMIN_NAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`
+- `STORAGE_ENCRYPTION_KEY` (recomendado)
+
+Os comandos para gerar segredos estão comentados no próprio arquivo.
 
 Banco PostgreSQL local rápido com Docker (opcional):
 
@@ -99,15 +131,7 @@ npm run db:migrate
 npm run db:seed
 ```
 
-Inicie em modo de desenvolvimento:
-
-```bash
-npm run dev
-```
-
-Acesse `http://localhost:3000` e entre com o e-mail/senha do administrador definidos no `.env`. Em **Configurações**, cadastre os dados e o logotipo da transportadora e crie os demais usuários.
-
-Produção local:
+Inicie em produção:
 
 ```bash
 npm run build
@@ -116,6 +140,8 @@ npm run build
 ```bash
 npm run start
 ```
+
+Entre com o e-mail e a senha do administrador. Em **Configurações**, cadastre o logotipo e as informações padrão e crie os demais usuários. Os scripts `dev` e `start` escutam em `127.0.0.1`; atrás de um proxy ou em contêiner, use `npx next start -H 0.0.0.0`.
 
 ---
 
@@ -194,11 +220,13 @@ Regras implementadas: nunca inventar valores (campos ausentes ficam vazios e ver
 
 Os testes usam **somente documentos fictícios gerados por código** (`tests/fixtures/documents.ts`).
 
-Unitários + integração (requer PostgreSQL; usa o banco `DATABASE_URL_TEST`, padrão `postgres://autofichas:autofichas@localhost:5432/autofichas_test`):
+Unitários + integração (usa o banco `DATABASE_URL_TEST`, padrão `postgres://autofichas:autofichas@localhost:5432/autofichas_test`):
 
 ```bash
 npm test
 ```
+
+Sem PostgreSQL instalado, rode a integração no banco embutido em memória definindo `DATABASE_URL_TEST=pglite` (PowerShell: `$env:DATABASE_URL_TEST="pglite"; npm test`; bash: `DATABASE_URL_TEST=pglite npm test`).
 
 Ponta a ponta no navegador (compila e sobe o servidor em `:3100` com banco `DATABASE_URL_E2E`, padrão `.../autofichas_e2e`, e provedor de IA `local`):
 
@@ -236,6 +264,7 @@ Passos:
 
 ## Segurança e LGPD
 
+- **Modo local sem login** (`AUTH_DISABLED=true`) apenas para testes no próprio computador; em qualquer servidor acessível por outras pessoas use `AUTH_DISABLED=false`.
 - Autenticação com senhas **scrypt**, sessões com token aleatório guardado apenas em **hash** no banco, cookie `httpOnly` + `SameSite=Lax` (+ `Secure` com HTTPS), limite de tentativas de login.
 - **Perfis** verificados no servidor em toda página, Server Action e rota de API (o middleware é só a primeira barreira).
 - Arquivos privados servidos por **URLs temporárias assinadas (HMAC, 10 min) vinculadas ao usuário** + sessão obrigatória; `Cache-Control: no-store`.

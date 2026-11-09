@@ -1,12 +1,10 @@
 import path from "node:path";
 import { rm } from "node:fs/promises";
 import { sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Pool } from "pg";
 import type { Role } from "@/lib/permissions";
 import type { SessionUser } from "@/server/auth/session";
-import { db } from "@/server/db";
+import { db, getDb } from "@/server/db";
+import { runMigrations } from "@/server/db/client";
 import { companySettings } from "@/server/db/schema";
 import { createUser } from "@/server/services/users";
 
@@ -14,9 +12,7 @@ let migrated = false;
 
 export async function resetDatabase() {
   if (!migrated) {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    await migrate(drizzle(pool), { migrationsFolder: path.resolve(process.cwd(), "drizzle") });
-    await pool.end();
+    await runMigrations(getDb());
     migrated = true;
   }
   await db.execute(

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronsUpDown, FilePlus2, KeyRound, LayoutDashboard, LogOut, Menu, Settings, Trash2, Truck, UserRound, X } from "lucide-react";
+import { ChevronsUpDown, MonitorSmartphone, FilePlus2, KeyRound, LayoutDashboard, LogOut, Menu, Settings, Trash2, Truck, UserRound, X } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Wordmark } from "@/components/logo-mark";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, TooltipProvider } from "@/components/ui/overlays";
@@ -31,10 +31,12 @@ const NAV: NavItem[] = [
 export function AppShell({
   user,
   company,
+  authDisabled = false,
   children,
 }: {
   user: { name: string; email: string; role: Role; mustChangePassword: boolean };
-  company: { name: string; configured: boolean };
+  company: { name: string; configured: boolean; logoUrl: string | null };
+  authDisabled?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -59,11 +61,19 @@ export function AppShell({
           <X className="size-5" />
         </button>
       </div>
-      {company.name && (
-        <div className="mx-4 mb-4 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
-          <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-brand-300">Transportadora</div>
-          <div className="truncate text-sm font-semibold text-white">{company.name}</div>
-        </div>
+      {(company.name || company.logoUrl) && (
+        <Link href="/configuracoes" className="mx-4 mb-4 block rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 hover:bg-white/10" title="Logotipo e informações padrão">
+          {company.logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={company.logoUrl} alt={company.name || "Logotipo da transportadora"} className="mb-1.5 max-h-12 max-w-full object-contain" />
+          )}
+          {company.name && (
+            <>
+              <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-brand-300">Transportadora</div>
+              <div className="truncate text-sm font-semibold text-white">{company.name}</div>
+            </>
+          )}
+        </Link>
       )}
       <nav className="flex-1 space-y-0.5 px-3" aria-label="Navegação principal">
         {items.map((item) => {
@@ -87,28 +97,40 @@ export function AppShell({
         })}
       </nav>
       <div className="p-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left hover:bg-white/5 focus-visible:outline-sun-300">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sun-400 text-sm font-extrabold text-brand-950">{initials}</span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-white">{user.name}</span>
-              <span className="block truncate text-xs text-brand-300">{ROLE_LABELS[user.role].label}</span>
+        {authDisabled ? (
+          <div className="flex items-center gap-3 rounded-xl px-2.5 py-2.5" title="AUTH_DISABLED=true — use apenas em ambiente local">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sun-400 text-brand-950">
+              <MonitorSmartphone className="size-[18px]" />
             </span>
-            <ChevronsUpDown className="size-4 text-brand-300" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" className="w-60">
-            <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
-            <DropdownMenuItem asChild>
-              <Link href="/configuracoes?tab=conta">
-                <KeyRound /> Alterar senha
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => void logoutAction()}>
-              <LogOut /> Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-white">Modo local</span>
+              <span className="block truncate text-xs text-brand-300">Login desativado</span>
+            </span>
+          </div>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left hover:bg-white/5 focus-visible:outline-sun-300">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sun-400 text-sm font-extrabold text-brand-950">{initials}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-white">{user.name}</span>
+                <span className="block truncate text-xs text-brand-300">{ROLE_LABELS[user.role].label}</span>
+              </span>
+              <ChevronsUpDown className="size-4 text-brand-300" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="start" className="w-60">
+              <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href="/configuracoes?tab=conta">
+                  <KeyRound /> Alterar senha
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => void logoutAction()}>
+                <LogOut /> Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </div>
   );
@@ -129,7 +151,7 @@ export function AppShell({
           </button>
           <Wordmark className="[&_div:last-child>div:last-child]:hidden" />
         </header>
-        {user.mustChangePassword && (
+        {user.mustChangePassword && !authDisabled && (
           <div className="border-b border-sun-200 bg-sun-50 px-4 py-2.5 text-sm text-ink-soft sm:px-8">
             Você está usando uma senha temporária.{" "}
             <Link className="font-semibold text-brand-700 underline" href="/configuracoes?tab=conta">
@@ -140,7 +162,7 @@ export function AppShell({
         )}
         {!company.configured && user.role === "admin" && (
           <div className="border-b border-brand-100 bg-brand-50 px-4 py-2.5 text-sm text-ink-soft sm:px-8">
-            Configure o nome, contatos e logotipo da transportadora para personalizar as fichas.{" "}
+            Cadastre o logotipo e as informações padrão da transportadora — eles aparecem no rodapé de todas as fichas.{" "}
             <Link className="font-semibold text-brand-700 underline" href="/configuracoes">
               Ir para configurações
             </Link>

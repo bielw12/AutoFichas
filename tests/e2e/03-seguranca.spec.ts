@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login, logout } from "./users";
+import { FIXTURES, login, logout } from "./users";
 
 test("TESTE 3 — sessão: sair e entrar novamente mantém os cadastros", async ({ page }) => {
   await page.goto("/motoristas");
@@ -66,7 +66,7 @@ test("visualizador: somente consulta e download, sem operações administrativas
   await expect(page).toHaveURL(/erro=permissao/);
 
   await page.goto("/configuracoes");
-  await expect(page.getByRole("tab", { name: /Empresa e ficha/ })).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: /Sistema e identidade/ })).toHaveCount(0);
   await expect(page.getByRole("tab", { name: /Usuários/ })).toHaveCount(0);
 
   await page.goto("/motoristas");
@@ -130,7 +130,17 @@ test("administrador: exclusão com confirmação, lixeira e restauração", asyn
 
   // Configurações administrativas disponíveis
   await page.goto("/configuracoes");
-  await expect(page.getByRole("tab", { name: /Empresa e ficha/ })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Sistema e identidade/ })).toBeVisible();
+
+  // Logotipo e informações padrão do sistema → barra lateral e rodapé das fichas
+  await page.getByTestId("logo-input").setInputFiles(FIXTURES("logo-ficticio.png"));
+  await expect(page.getByText("Logotipo atualizado.")).toBeVisible();
+  await page.getByLabel("Nome da transportadora").fill("Transportes Fictícios E2E");
+  await page.getByRole("button", { name: "Salvar informações e aparência" }).click();
+  await expect(page.getByText(/Configurações salvas/)).toBeVisible();
+  await page.reload();
+  await expect(page.locator("aside").first().getByRole("img", { name: "Transportes Fictícios E2E" })).toBeVisible();
+
   await page.getByRole("tab", { name: /Usuários/ }).click();
   await expect(page.getByText("visualizador@e2e.local")).toBeVisible();
 });

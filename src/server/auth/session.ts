@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "../db";
 import { sessions, users, type User } from "../db/schema";
-import { sessionTtlMs } from "../env";
+import { authDisabled, sessionTtlMs } from "../env";
 import { can, type Permission, type Role } from "@/lib/permissions";
 
 export const SESSION_COOKIE = "af_session";
@@ -66,8 +66,33 @@ function toSessionUser(u: User): SessionUser {
   return { id: u.id, name: u.name, email: u.email, role: u.role, mustChangePassword: u.mustChangePassword };
 }
 
+export const LOCAL_USER_EMAIL = "usuario.local@autofichas.local";
+
+/**
+ * Modo sem login (AUTH_DISABLED=true): todas as requisições usam um usuário
+ * local com perfil de administrador, criado automaticamente. As permissões,
+ * a auditoria e as URLs assinadas continuam funcionando normalmente.
+ */
+export async function getLocalUser(): Promise<SessionUser> {
+  const find = async () => (await db.select().from(users).where(eq(users.email, LOCAL_USER_EMAIL)).limit(1))[0];
+  let row = await find();
+  if (!row) {
+    const { hashPassword } = await import("./password");
+    await db
+      .insert(users)
+      .values({ name: "Usuário local", email: LOCAL_USER_EMAIL, role: "admin", passwordHash: await hashPassword(randomBytes(32).toString("hex")) })
+      .onConflictDoNothing();
+    row = await find();
+  }
+  if (!row.active || row.role !== "admin") {
+    await db.update(users).set({ active: true, role: "admin" }).where(eq(users.id, row.id));
+  }
+  return { ...toSessionUser(row), role: "admin", mustChangePassword: false };
+}
+
 /** Usuário da sessão atual (ou null). Memorizado por requisição. */
 export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
+  if (authDisabled()) return getLocalUser();
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (!token || token.length > 100) return null;

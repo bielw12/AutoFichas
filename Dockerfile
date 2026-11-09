@@ -23,8 +23,8 @@ COPY --from=build /app/drizzle ./drizzle
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/src ./src
 COPY --from=build /app/tsconfig.json /app/next.config.ts ./
-RUN mkdir -p /app/storage /app/.tesseract-cache && chown -R pwuser:pwuser /app/storage /app/.tesseract-cache
+RUN mkdir -p /app/storage /app/data /app/.tesseract-cache && chown -R pwuser:pwuser /app/storage /app/data /app/.tesseract-cache
 USER pwuser
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s CMD node -e "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["npx", "next", "start", "-p", "3000"]
+CMD ["npx", "next", "start", "-p", "3000", "-H", "0.0.0.0"]

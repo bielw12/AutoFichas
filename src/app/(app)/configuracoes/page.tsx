@@ -4,6 +4,7 @@ import { SettingsView } from "@/components/settings/settings-view";
 import { can } from "@/lib/permissions";
 import { providerStatus } from "@/server/ai/registry";
 import { requirePageUser } from "@/server/auth/session";
+import { authDisabled } from "@/server/env";
 import { listUsers } from "@/server/services/users";
 import { getSettings } from "@/server/services/settings";
 import { signedLogoUrl } from "@/server/signed-url";
@@ -19,9 +20,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const ai = providerStatus();
   return (
     <>
-      <PageHeader eyebrow="Configurações" title={isAdmin ? "Configurações do sistema" : "Minha conta"} description={isAdmin ? "Identidade visual das fichas, integração de IA, usuários e políticas de privacidade." : "Gerencie seu acesso."} />
+      <PageHeader eyebrow="Configurações" title={isAdmin ? "Configurações do sistema" : "Minha conta"} description={isAdmin ? "Logotipo e informações padrão das fichas, integração de IA, usuários e políticas de privacidade." : "Gerencie seu acesso."} />
       <SettingsView
-        initialTab={tab ?? (isAdmin ? "empresa" : "conta")}
+        authDisabled={authDisabled()}
+        initialTab={tab === "conta" && authDisabled() ? "empresa" : (tab ?? (isAdmin ? "empresa" : "conta"))}
         isAdmin={isAdmin}
         currentUserId={user.id}
         settings={{

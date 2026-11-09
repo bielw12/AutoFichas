@@ -9,6 +9,11 @@ const PUBLIC_PATHS = ["/login", "/api/health"];
  */
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
+  // Modo local sem login: a página de login não é usada
+  if (process.env.AUTH_DISABLED === "true") {
+    if (pathname === "/login") return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.next();
+  }
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) return NextResponse.next();
   if (req.cookies.get("af_session")?.value) return NextResponse.next();
   if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
@@ -19,5 +24,7 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
+  // Runtime Node: lê AUTH_DISABLED em tempo de execução (não no build)
+  runtime: "nodejs",
   matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|fonts/).*)"],
 };

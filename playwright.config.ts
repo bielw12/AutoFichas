@@ -13,6 +13,7 @@ export const E2E_ENV = {
   APP_URL: `http://localhost:${PORT}`,
   AI_PROVIDER: "local",
   MAX_UPLOAD_MB: "15",
+  AUTH_DISABLED: "false",
 };
 
 export default defineConfig({

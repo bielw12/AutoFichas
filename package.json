@@ -4,9 +4,9 @@
   "private": true,
   "description": "Sistema inteligente de gestão e geração de fichas cadastrais de motoristas e veículos",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 127.0.0.1",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
@@ -17,6 +17,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@electric-sql/pglite": "0.5.16",
     "@fontsource-variable/jetbrains-mono": "5.3.0",
     "@fontsource-variable/manrope": "5.3.0",
     "@fontsource/open-sans": "5.3.0",

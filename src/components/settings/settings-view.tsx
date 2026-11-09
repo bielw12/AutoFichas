@@ -33,7 +33,9 @@ export function SettingsView({
   ai,
   users,
   storage,
+  authDisabled = false,
 }: {
+  authDisabled?: boolean;
   initialTab: string;
   isAdmin: boolean;
   currentUserId: string;
@@ -48,13 +50,13 @@ export function SettingsView({
       <TabsList>
         {isAdmin && (
           <TabsTrigger value="empresa">
-            <Building2 /> Empresa e ficha
+            <Building2 /> Sistema e identidade
           </TabsTrigger>
         )}
         <TabsTrigger value="ia">
           <Bot /> Inteligência artificial
         </TabsTrigger>
-        {isAdmin && (
+        {isAdmin && !authDisabled && (
           <TabsTrigger value="usuarios">
             <Users /> Usuários
           </TabsTrigger>
@@ -64,9 +66,11 @@ export function SettingsView({
             <ShieldCheck /> Privacidade e retenção
           </TabsTrigger>
         )}
-        <TabsTrigger value="conta">
-          <KeyRound /> Minha conta
-        </TabsTrigger>
+        {!authDisabled && (
+          <TabsTrigger value="conta">
+            <KeyRound /> Minha conta
+          </TabsTrigger>
+        )}
       </TabsList>
       {isAdmin && (
         <TabsContent value="empresa" className="pt-6">
@@ -76,7 +80,7 @@ export function SettingsView({
       <TabsContent value="ia" className="pt-6">
         <AiPanel ai={ai} isAdmin={isAdmin} />
       </TabsContent>
-      {isAdmin && (
+      {isAdmin && !authDisabled && (
         <TabsContent value="usuarios" className="pt-6">
           <UsersPanel users={users} currentUserId={currentUserId} />
         </TabsContent>
@@ -86,18 +90,23 @@ export function SettingsView({
           <PrivacyPanel settings={settings} storage={storage} />
         </TabsContent>
       )}
-      <TabsContent value="conta" className="pt-6">
-        <AccountPanel />
-      </TabsContent>
+      {!authDisabled && (
+        <TabsContent value="conta" className="pt-6">
+          <AccountPanel />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
 
+/** Rótulo envolvendo o campo: associação implícita (acessível e clicável). */
 function Field({ label, children, hint, className }: { label: string; children: React.ReactNode; hint?: string; className?: string }) {
   return (
     <div className={className}>
-      <Label className="mb-1.5 block">{label}</Label>
-      {children}
+      <label className="block">
+        <span className="mb-1.5 block text-[13px] font-semibold text-ink-soft">{label}</span>
+        {children}
+      </label>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </div>
   );
@@ -108,6 +117,7 @@ function CompanyForm({ settings, logoUrl }: { settings: SettingsData; logoUrl: s
   const [s, setS] = useState(settings);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [drag, setDrag] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const set = <K extends keyof SettingsData>(k: K, v: SettingsData[K]) => setS((x) => ({ ...x, [k]: v }));
 
@@ -140,11 +150,71 @@ function CompanyForm({ settings, logoUrl }: { settings: SettingsData; logoUrl: s
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Building2 className="size-4 text-brand-500" /> Dados da transportadora
+              <Building2 className="size-4 text-brand-500" /> Logotipo e informações padrão
             </CardTitle>
-            <CardDescription>Exibidos no rodapé institucional de todas as páginas da ficha.</CardDescription>
+            <CardDescription>
+              Configurados uma única vez para o sistema e aplicados automaticamente no rodapé de todas as fichas geradas (e na barra lateral do sistema). Não é preciso informar nada disso em cada ficha.
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Label className="mb-1.5 block">Logotipo da transportadora</Label>
+              <div
+                data-testid="logo-dropzone"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDrag(true);
+                }}
+                onDragLeave={() => setDrag(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDrag(false);
+                  const f = e.dataTransfer.files?.[0];
+                  if (f) void uploadLogo(f);
+                }}
+                className={`flex flex-col gap-4 rounded-xl border-2 border-dashed p-4 sm:flex-row sm:items-center ${drag ? "border-brand-400 bg-brand-50" : "border-line"}`}
+              >
+                <div className="flex h-24 w-full shrink-0 items-center justify-center rounded-lg p-3 sm:w-64" style={{ background: s.primaryColor, borderTop: `3px solid ${s.accentColor}` }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {logoUrl ? <img src={logoUrl} alt="Logotipo atual" className="max-h-full max-w-full object-contain" /> : <span className="text-xs font-semibold text-white/80">Nenhum logotipo enviado</span>}
+                </div>
+                <div className="min-w-0 flex-1 space-y-2">
+                  <p className="text-sm text-ink-soft">
+                    Arraste a imagem aqui ou clique em enviar. Prefira <strong>PNG com fundo transparente</strong>, que fica melhor sobre a faixa colorida do rodapé. Máx. 1,5 MB. O logotipo é salvo assim que enviado.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" onClick={() => fileRef.current?.click()} loading={uploading}>
+                      <ImageUp /> {logoUrl ? "Trocar logotipo" : "Enviar logotipo"}
+                    </Button>
+                    {logoUrl && (
+                      <Button
+                        variant="danger-ghost"
+                        onClick={async () => {
+                          const res = await removeLogoAction();
+                          if (!res.ok) return toast.error(res.error);
+                          toast.success("Logotipo removido.");
+                          router.refresh();
+                        }}
+                      >
+                        <Trash2 /> Remover
+                      </Button>
+                    )}
+                  </div>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    hidden
+                    data-testid="logo-input"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (f) void uploadLogo(f);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
             <Field label="Nome da transportadora">
               <Input value={s.companyName} onChange={(e) => set("companyName", e.target.value)} placeholder="Ex.: Transportes Exemplo Ltda." />
             </Field>
@@ -171,7 +241,7 @@ function CompanyForm({ settings, logoUrl }: { settings: SettingsData; logoUrl: s
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Palette className="size-4 text-brand-500" /> Identidade visual da ficha
+              <Palette className="size-4 text-brand-500" /> Aparência da ficha
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5 sm:grid-cols-2">
@@ -201,46 +271,11 @@ function CompanyForm({ settings, logoUrl }: { settings: SettingsData; logoUrl: s
                 <span className="block text-muted">Inserida antes dos comprovantes bancários enviados.</span>
               </span>
             </label>
-            <Field label="Logotipo" className="sm:col-span-2" hint="PNG com fundo transparente fica melhor sobre a faixa colorida. Máx. 1,5 MB.">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex h-16 w-44 items-center justify-center rounded-lg p-2" style={{ background: s.primaryColor }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  {logoUrl ? <img src={logoUrl} alt="Logotipo atual" className="max-h-full max-w-full object-contain" /> : <span className="text-xs font-semibold text-white/80">Sem logotipo</span>}
-                </div>
-                <Button variant="secondary" onClick={() => fileRef.current?.click()} loading={uploading}>
-                  <ImageUp /> {logoUrl ? "Trocar" : "Enviar"} logotipo
-                </Button>
-                {logoUrl && (
-                  <Button
-                    variant="danger-ghost"
-                    onClick={async () => {
-                      const res = await removeLogoAction();
-                      if (!res.ok) return toast.error(res.error);
-                      toast.success("Logotipo removido.");
-                      router.refresh();
-                    }}
-                  >
-                    <Trash2 /> Remover
-                  </Button>
-                )}
-                <input
-                  ref={fileRef}
-                  type="file"
-                  hidden
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    e.target.value = "";
-                    if (f) void uploadLogo(f);
-                  }}
-                />
-              </div>
-            </Field>
           </CardContent>
         </Card>
         <div className="flex justify-end">
           <Button size="lg" onClick={save} loading={saving}>
-            Salvar configurações
+            Salvar informações e aparência
           </Button>
         </div>
       </div>

@@ -3,12 +3,13 @@ import { redirect } from "next/navigation";
 import { FileCheck2, ScanText, ShieldCheck } from "lucide-react";
 import { Wordmark } from "@/components/logo-mark";
 import { getCurrentUser } from "@/server/auth/session";
+import { authDisabled } from "@/server/env";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Entrar" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  if (await getCurrentUser()) redirect("/");
+  if (authDisabled() || (await getCurrentUser())) redirect("/");
   const { next } = await searchParams;
   return (
     <main className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">

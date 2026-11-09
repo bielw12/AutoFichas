@@ -26,7 +26,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["sharp", "pg", "playwright-core", "tesseract.js", "unpdf", "heic-convert", "pdf-lib"],
+  serverExternalPackages: ["@electric-sql/pglite", "sharp", "pg", "playwright-core", "tesseract.js", "unpdf", "heic-convert", "pdf-lib"],
   experimental: {
     serverActions: { bodySizeLimit: "2mb" },
   },

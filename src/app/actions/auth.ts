@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { audit } from "@/server/audit";
 import { clientIp, createSession, destroySession, getCurrentUser, requireUser } from "@/server/auth/session";
+import { authDisabled } from "@/server/env";
 import { runAction } from "@/server/http";
 import { authenticate, changeOwnPassword, isLoginBlocked, recordLoginAttempt } from "@/server/services/users";
 
@@ -11,6 +12,7 @@ export interface LoginState {
 }
 
 export async function loginAction(_prev: LoginState, form: FormData): Promise<LoginState> {
+  if (authDisabled()) redirect("/");
   const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 200);
   const password = String(form.get("password") ?? "").slice(0, 200);
   const next = String(form.get("next") ?? "/");
@@ -33,6 +35,7 @@ export async function loginAction(_prev: LoginState, form: FormData): Promise<Lo
 }
 
 export async function logoutAction() {
+  if (authDisabled()) redirect("/");
   const user = await getCurrentUser();
   await destroySession();
   if (user) await audit({ user, action: "auth.logout", entityType: "auth", entityId: user.id });

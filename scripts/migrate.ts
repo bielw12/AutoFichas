@@ -1,18 +1,12 @@
 import "dotenv/config";
-import path from "node:path";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Pool } from "pg";
+import { createDb, closeDbClient, embeddedDbDir, runMigrations, usingEmbeddedDb } from "../src/server/db/client";
 
 async function main() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL não configurada.");
-  const pool = new Pool({ connectionString: url, ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined });
-  const db = drizzle(pool);
-  console.log("Aplicando migrations...");
-  await migrate(db, { migrationsFolder: path.resolve(process.cwd(), "drizzle") });
+  const db = createDb();
+  console.log(usingEmbeddedDb() ? `Aplicando migrations no banco embutido (${embeddedDbDir()})...` : "Aplicando migrations...");
+  await runMigrations(db);
   console.log("Migrations aplicadas com sucesso.");
-  await pool.end();
+  await closeDbClient(db);
 }
 
 main().catch((err) => {

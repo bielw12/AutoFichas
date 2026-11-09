@@ -1,27 +1,17 @@
 import "server-only";
-import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
-import * as schema from "./schema";
+import { createDb, closeDbClient, type DB } from "./client";
 
-type DB = NodePgDatabase<typeof schema>;
+export type { DB };
 
-const globalForDb = globalThis as unknown as { __afPool?: Pool; __afDb?: DB };
+const globalForDb = globalThis as unknown as { __afDb?: DB };
 
-function createPool() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL não configurada. Veja o arquivo .env.example.");
-  return new Pool({
-    connectionString: url,
-    max: Number(process.env.DATABASE_POOL_MAX ?? 10),
-    ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
-  });
-}
-
+/**
+ * Conexão única por processo (sobrevive ao recarregamento do Next em dev).
+ * - DATABASE_URL definido → PostgreSQL (local, Docker ou Supabase).
+ * - DATABASE_URL vazio    → PostgreSQL embutido (PGlite) em PGLITE_DIR, sem instalação.
+ */
 export function getDb(): DB {
-  if (!globalForDb.__afDb) {
-    globalForDb.__afPool = createPool();
-    globalForDb.__afDb = drizzle(globalForDb.__afPool, { schema, casing: "snake_case" });
-  }
+  globalForDb.__afDb ??= createDb();
   return globalForDb.__afDb;
 }
 
@@ -34,9 +24,9 @@ export const db = new Proxy({} as DB, {
 });
 
 export async function closeDb() {
-  await globalForDb.__afPool?.end();
-  globalForDb.__afPool = undefined;
+  const current = globalForDb.__afDb;
   globalForDb.__afDb = undefined;
+  if (current) await closeDbClient(current);
 }
 
-export { schema };
+export * as schema from "./schema";

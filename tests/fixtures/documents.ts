@@ -244,6 +244,17 @@ export async function illegibleImage(): Promise<Buffer> {
     .toBuffer();
 }
 
+/** Logotipo fictício (PNG com fundo transparente). */
+export async function fictitiousLogo(): Promise<Buffer> {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="300">
+    <text x="20" y="190" font-family="Arial" font-weight="900" font-size="170" fill="#F4CF14">TFX</text>
+    <rect x="470" y="95" width="260" height="110" rx="10" fill="none" stroke="#fff" stroke-width="12"/>
+    <rect x="730" y="130" width="110" height="75" rx="10" fill="none" stroke="#fff" stroke-width="12"/>
+    <circle cx="540" cy="225" r="28" fill="#fff"/><circle cx="780" cy="225" r="28" fill="#fff"/>
+  </svg>`;
+  return sharp(Buffer.from(svg)).png().toBuffer();
+}
+
 export interface FixtureSet {
   cnhPdf: string;
   comprovantePng: string;
@@ -253,6 +264,7 @@ export interface FixtureSet {
   fotoJpg: string;
   ilegivelJpg: string;
   cnhNovaPdf: string;
+  logoPng: string;
 }
 
 /** Gera todos os arquivos fictícios em disco (usado pelos testes E2E). */
@@ -268,6 +280,7 @@ export async function writeFixtures(dir: string): Promise<FixtureSet> {
     fotoJpg: out("foto-veiculo-ficticia.jpg"),
     ilegivelJpg: out("documento-ilegivel.jpg"),
     cnhNovaPdf: out("cnh-ficticia-renovada.pdf"),
+    logoPng: out("logo-ficticio.png"),
   };
   await writeFile(files.cnhPdf, await htmlToPdfBuffer(cnhHtml()));
   await writeFile(files.comprovantePng, await htmlToImage(comprovanteHtml(), "png"));
@@ -277,6 +290,7 @@ export async function writeFixtures(dir: string): Promise<FixtureSet> {
   await writeFile(files.fotoJpg, await vehiclePhoto());
   await writeFile(files.ilegivelJpg, await illegibleImage());
   await writeFile(files.cnhNovaPdf, await htmlToPdfBuffer(cnhHtml().replace(FICTICIO.motorista.validade, "20/08/2036")));
+  await writeFile(files.logoPng, await fictitiousLogo());
   await closeFixtureBrowser();
   return files;
 }
