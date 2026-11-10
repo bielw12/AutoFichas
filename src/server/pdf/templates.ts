@@ -5,6 +5,7 @@ import { KIND_LABELS, type RecordKind } from "@/lib/doc-types";
 import { formatValue } from "@/lib/display";
 import { fieldDef, type FormValues } from "@/lib/fields";
 import { formatCpfCnpj, formatNumberBR, formatPhone } from "@/lib/format";
+import type { BankPageData } from "../services/settings";
 
 export const FOOTER_HEIGHT = 96; // pt — faixa institucional desenhada pelo assembler
 
@@ -161,29 +162,58 @@ export function hasBankData(values: FormValues): boolean {
   return !!(values.bancoNome || values.conta || values.pixChave || values.agencia);
 }
 
-export function bankPageHtml(values: FormValues, ctx: FichaContext, companyName: string): string {
+/** Converte os dados bancários do motorista para o formato da página. */
+export function driverBankData(values: FormValues): BankPageData {
   const k: RecordKind = "driver";
-  const vinculo = v(k, values, "titularVinculo");
-  const conta = [values.conta, values.contaDigito].filter(Boolean).join("-");
-  const pixTipo = v(k, values, "pixTipo");
-  const pix = values.pixChave ? (values.pixTipo === "cpf" || values.pixTipo === "cnpj" ? formatCpfCnpj(values.pixChave) : values.pixTipo === "telefone" ? formatPhone(values.pixChave) || values.pixChave : values.pixChave) : "";
+  return {
+    titularNome: values.titularNome,
+    titularDocumento: values.titularDocumento,
+    vinculo: v(k, values, "titularVinculo"),
+    bancoNome: values.bancoNome,
+    bancoCodigo: values.bancoCodigo,
+    agencia: values.agencia,
+    conta: values.conta,
+    contaDigito: values.contaDigito,
+    contaTipo: values.contaTipo,
+    pixTipo: values.pixTipo,
+    pixChave: values.pixChave,
+  };
+}
+
+const ACCOUNT_TYPES: Record<string, string> = { corrente: "Conta corrente", poupanca: "Poupança", pagamento: "Conta de pagamento", salario: "Conta salário" };
+const PIX_TYPES: Record<string, string> = { cpf: "CPF", cnpj: "CNPJ", email: "E-mail", telefone: "Telefone", aleatoria: "Chave aleatória" };
+
+export function bankPageHtml(b: BankPageData, ctx: FichaContext, companyName: string): string {
+  const conta = [b.conta, b.contaDigito].filter(Boolean).join("-");
+  const pixTipo = PIX_TYPES[b.pixTipo] ?? b.pixTipo;
+  const pix = b.pixChave
+    ? b.pixTipo === "cpf" || b.pixTipo === "cnpj"
+      ? formatCpfCnpj(b.pixChave)
+      : b.pixTipo === "telefone"
+        ? formatPhone(b.pixChave) || b.pixChave
+        : b.pixChave
+    : "";
   const body = `
   <div class="head"><h1>DADOS BANCÁRIOS</h1><div class="accent-bar"></div>
   ${companyName ? `<p class="line" style="margin-top:10pt;font-size:12pt;color:#4b5565">${esc(companyName)}</p>` : ""}</div>
   <div class="lead" style="text-align:center">
-    ${line("Titular", values.titularNome, true)}
-    ${line("CPF/CNPJ", v(k, values, "titularDocumento"))}
-    ${vinculo ? line("Dados pertencem a", vinculo) : ""}
+    ${line("Titular", b.titularNome, true)}
+    ${line("CPF/CNPJ", formatCpfCnpj(b.titularDocumento))}
+    ${b.vinculo ? line("Dados pertencem a", b.vinculo) : ""}
   </div>
   <div class="lead" style="text-align:center;margin-top:22pt">
-    ${line("Banco", [values.bancoCodigo, values.bancoNome].filter(Boolean).join(" — "), true)}
-    ${line("Agência", values.agencia)}
+    ${line("Banco", [b.bancoCodigo, b.bancoNome].filter(Boolean).join(" — "), true)}
+    ${line("Agência", b.agencia)}
     ${line("Conta", conta)}
-    ${line("Tipo de conta", v(k, values, "contaTipo"))}
+    ${b.contaTipo ? line("Tipo de conta", ACCOUNT_TYPES[b.contaTipo] ?? b.contaTipo) : ""}
   </div>
-  <div class="lead" style="text-align:center;margin-top:22pt">
+  ${
+    b.pixChave
+      ? `<div class="lead" style="text-align:center;margin-top:22pt">
     ${line(`Chave PIX${pixTipo ? ` (${pixTipo})` : ""}`, pix, true)}
-  </div>`;
+  </div>`
+      : ""
+  }`;
   return doc("Dados bancários", ctx.theme, body);
 }
 

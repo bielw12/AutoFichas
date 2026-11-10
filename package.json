@@ -4,7 +4,9 @@
   "private": true,
   "description": "Sistema inteligente de gestão e geração de fichas cadastrais de motoristas e veículos",
   "scripts": {
-    "dev": "next dev -H 127.0.0.1",
+    "dev": "next dev --turbopack -H 127.0.0.1",
+    "dev:webpack": "next dev -H 127.0.0.1",
+    "local": "next build && next start -H 127.0.0.1",
     "build": "next build",
     "start": "next start -H 127.0.0.1",
     "typecheck": "tsc --noEmit",

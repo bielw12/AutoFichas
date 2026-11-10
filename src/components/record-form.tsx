@@ -153,10 +153,12 @@ export interface RecordFormProps {
   highlight?: string[];
   readOnly?: boolean;
   sections?: string[];
+  /** Observações extras por seção (ex.: dados bancários vindos das configurações). */
+  sectionNotes?: Record<string, string>;
 }
 
 /** Formulário inteligente organizado por seções, com indicação de confiança. */
-export function RecordForm({ kind, values, meta, errors = {}, onChange, onConfirm, onFocusField, highlight = [], readOnly, sections }: RecordFormProps) {
+export function RecordForm({ kind, values, meta, errors = {}, onChange, onConfirm, onFocusField, highlight = [], readOnly, sections, sectionNotes = {} }: RecordFormProps) {
   const fields = FIELDS[kind];
   return (
     <div className="space-y-5">
@@ -182,7 +184,8 @@ export function RecordForm({ kind, values, meta, errors = {}, onChange, onConfir
                   {counts.review > 0 && <span className="rounded-full bg-sun-50 px-2 py-0.5 text-[11px] font-bold text-sun-600 ring-1 ring-sun-200">{counts.review} a conferir</span>}
                   {counts.red > 0 && <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-700 ring-1 ring-red-200">{counts.red} pendente{counts.red > 1 ? "s" : ""}</span>}
                 </div>
-                {section.description && <p className="w-full text-xs text-muted">{section.description}</p>}
+                {section.description && !sectionNotes[section.id] && <p className="w-full text-xs text-muted">{section.description}</p>}
+                {sectionNotes[section.id] && <p className="w-full rounded-md bg-brand-50 px-2.5 py-1.5 text-xs font-medium text-brand-800">{sectionNotes[section.id]}</p>}
               </header>
               <div className="grid grid-cols-1 gap-x-4 gap-y-4 p-5 sm:grid-cols-2 2xl:grid-cols-3">
                 {list.map((def) => {

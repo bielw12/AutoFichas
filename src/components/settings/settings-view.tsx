@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Bot, Building2, Copy, HardDrive, ImageUp, KeyRound, Lock, Palette, RefreshCw, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
+import { Bot, Building2, Landmark, Copy, HardDrive, ImageUp, KeyRound, Lock, Palette, RefreshCw, ShieldCheck, Trash2, UserPlus, Users } from "lucide-react";
 import { changePasswordAction } from "@/app/actions/auth";
 import { createUserAction, removeLogoAction, uploadLogoAction, resetPasswordAction, runRetentionAction, setExternalAiAction, updateSettingsAction, updateUserAction, type SettingsInput } from "@/app/actions/admin";
 import { Button } from "@/components/ui/button";
@@ -236,6 +236,74 @@ function CompanyForm({ settings, logoUrl }: { settings: SettingsData; logoUrl: s
             <Field label="Texto adicional do rodapé" className="sm:col-span-2">
               <Input value={s.footerText} onChange={(e) => set("footerText", e.target.value)} placeholder="Ex.: Documento de uso interno" />
             </Field>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Landmark className="size-4 text-brand-500" /> Dados bancários padrão
+            </CardTitle>
+            <CardDescription>
+              Conta da transportadora exibida na página &quot;Dados bancários&quot; de todas as fichas de motoristas. Preenchidos aqui, o documento bancário de cada motorista passa a ser opcional.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <Field label="Página &quot;Dados bancários&quot; da ficha usa" className="sm:col-span-2">
+              <NativeSelect value={s.bankSource} onChange={(e) => set("bankSource", e.target.value as SettingsData["bankSource"])}>
+                <option value="empresa">Os dados bancários padrão abaixo (da transportadora)</option>
+                <option value="motorista">Os dados bancários de cada motorista (documento enviado no cadastro)</option>
+              </NativeSelect>
+            </Field>
+            <fieldset disabled={s.bankSource === "motorista"} className="contents">
+              <Field label="Banco">
+                <Input value={s.bankName} onChange={(e) => set("bankName", e.target.value)} placeholder="Ex.: Banco do Brasil" />
+              </Field>
+              <Field label="Código do banco">
+                <Input value={s.bankCode} onChange={(e) => set("bankCode", e.target.value)} inputMode="numeric" placeholder="Ex.: 001" className="font-mono" />
+              </Field>
+              <Field label="Agência">
+                <Input value={s.bankAgency} onChange={(e) => set("bankAgency", e.target.value)} className="font-mono" />
+              </Field>
+              <div className="grid grid-cols-[1fr_88px] gap-3">
+                <Field label="Conta">
+                  <Input value={s.bankAccount} onChange={(e) => set("bankAccount", e.target.value)} className="font-mono" />
+                </Field>
+                <Field label="Dígito">
+                  <Input value={s.bankAccountDigit} onChange={(e) => set("bankAccountDigit", e.target.value)} className="font-mono" />
+                </Field>
+              </div>
+              <Field label="Tipo de conta">
+                <NativeSelect value={s.bankAccountType} onChange={(e) => set("bankAccountType", e.target.value as SettingsData["bankAccountType"])}>
+                  <option value="">Selecione…</option>
+                  <option value="corrente">Conta corrente</option>
+                  <option value="poupanca">Poupança</option>
+                  <option value="pagamento">Conta de pagamento</option>
+                  <option value="salario">Conta salário</option>
+                </NativeSelect>
+              </Field>
+              <Field label="Titular (nome ou razão social)">
+                <Input value={s.bankHolderName} onChange={(e) => set("bankHolderName", e.target.value)} placeholder={s.companyName || "Ex.: Transportes Exemplo Ltda."} />
+              </Field>
+              <Field label="CPF/CNPJ do titular">
+                <Input value={s.bankHolderDocument} onChange={(e) => set("bankHolderDocument", e.target.value)} inputMode="numeric" className="font-mono" />
+              </Field>
+              <Field label="Tipo da chave PIX">
+                <NativeSelect value={s.bankPixType} onChange={(e) => set("bankPixType", e.target.value as SettingsData["bankPixType"])}>
+                  <option value="">Sem chave PIX</option>
+                  <option value="cnpj">CNPJ</option>
+                  <option value="cpf">CPF</option>
+                  <option value="email">E-mail</option>
+                  <option value="telefone">Telefone</option>
+                  <option value="aleatoria">Chave aleatória</option>
+                </NativeSelect>
+              </Field>
+              <Field label="Chave PIX" className="sm:col-span-2">
+                <Input value={s.bankPixKey} onChange={(e) => set("bankPixKey", e.target.value)} />
+              </Field>
+            </fieldset>
+            {s.bankSource === "empresa" && !(s.bankName.trim() || s.bankAccount.trim() || s.bankPixKey.trim()) && (
+              <p className="text-xs text-muted sm:col-span-2">Enquanto nenhum dado for preenchido, a ficha continua usando os dados bancários de cada motorista.</p>
+            )}
           </CardContent>
         </Card>
         <Card>

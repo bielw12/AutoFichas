@@ -78,8 +78,15 @@ Copie o arquivo de exemplo de configuração (no Windows CMD use `copy`; no Powe
 copy .env.example .env
 ```
 
+Inicie de um dos dois jeitos:
+
+| Comando | Quando usar |
+|---|---|
+| `npm run local` | **Para testar o sistema (mais rápido).** Compila uma vez (~1 min) e roda em modo produção: troca de páginas em ~50 ms. Rode de novo após atualizar o código. |
+| `npm run dev` | Para desenvolver/alterar o código. Recarrega a cada alteração, mas compila cada página na primeira visita (1–2 s, mais no Windows). |
+
 ```bash
-npm run dev
+npm run local
 ```
 
 Abra **http://localhost:3000**. Não há tela de login: com `AUTH_DISABLED=true` (padrão do `.env.example`) o sistema usa um usuário local com perfil de administrador.
@@ -92,7 +99,9 @@ O que acontece automaticamente:
 
 Primeiros passos:
 
-1. Abra **Configurações → Sistema e identidade** e envie o **logotipo** e as **informações padrão**: nome, telefones, e-mails, site e texto do rodapé. Eles entram automaticamente no rodapé de todas as fichas e aparecem na barra lateral do sistema.
+1. Abra **Configurações → Sistema e identidade** e preencha uma única vez:
+   - **logotipo** e **informações padrão**: nome, telefones, e-mails, site e texto do rodapé. Entram no rodapé de todas as fichas e aparecem na barra lateral do sistema;
+   - **dados bancários padrão**: banco, agência, conta, titular, CPF/CNPJ e chave PIX da transportadora. Aparecem na página "Dados bancários" de todas as fichas de motoristas, e o documento bancário de cada motorista passa a ser opcional. Para voltar a usar os dados de cada motorista, troque a opção "Página 'Dados bancários' da ficha usa".
 2. Clique em **Nova ficha cadastral**, escolha *Motorista* ou *Veículo* e envie os documentos.
 
 > O servidor escuta apenas em `127.0.0.1`, porque sem login qualquer pessoa com acesso à porta usaria o sistema. Para reiniciar do zero, pare o servidor e apague as pastas `data` e `storage`.

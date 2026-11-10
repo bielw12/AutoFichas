@@ -29,7 +29,7 @@ import { ConfidenceLegend, RecordForm } from "@/components/record-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox, ConfirmDialog, Dialog, DialogContent, DialogTitle } from "@/components/ui/overlays";
 import { Card } from "@/components/ui/primitives";
-import { DOC_ORDER, DOC_TYPES, KIND_LABELS, requiredDocs, type DocType, type RecordKind } from "@/lib/doc-types";
+import { COMPANY_BANK_DOC_HINT, COMPANY_BANK_SECTION_NOTE, DOC_ORDER, DOC_TYPES, isDocRequired, KIND_LABELS, requiredDocs, type DocType, type RecordKind } from "@/lib/doc-types";
 import type { ExtractionSummary, ProcessEvent } from "@/lib/extraction-types";
 import type { FieldMetaMap } from "@/lib/field-meta";
 import { DUPLICATE_KEYS, emptyValues, FIELDS, fieldDef, fieldLabel, type FormValues } from "@/lib/fields";
@@ -101,7 +101,10 @@ export function RecordWizard({
   ai,
   canSaveIncomplete,
   maxUploadMb,
+  companyBank = false,
 }: {
+  /** Dados bancários padrão da transportadora em uso (Configurações). */
+  companyBank?: boolean;
   kind: RecordKind;
   initial: RecordEditorState | null;
   ai: AiStatusInfo;
@@ -203,7 +206,7 @@ export function RecordWizard({
     toast.success("Arquivo removido.");
   };
 
-  const missingDocs = requiredDocs(kind).filter((t) => !docs.some((d) => d.docType === t));
+  const missingDocs = requiredDocs(kind, { companyBank }).filter((t) => !docs.some((d) => d.docType === t));
   const uploading = uploads.some((u) => !u.error);
   const pending = useMemo(() => pendingTypes(docs, extractions), [docs, extractions]);
 
@@ -276,7 +279,7 @@ export function RecordWizard({
   const errors = useMemo(() => formErrors(kind, values), [kind, values]);
   const issues = useMemo(() => detectInconsistencies(kind, norm, extractions), [kind, norm, extractions]);
   const blocking = unresolvedErrors(issues, ack);
-  const missingFields = missingRequiredFields(kind, norm);
+  const missingFields = missingRequiredFields(kind, norm, { companyBank });
 
   const dupKey = DUPLICATE_KEYS[kind].map((d) => norm[d.key]).join("|");
   useEffect(() => {
@@ -450,6 +453,8 @@ export function RecordWizard({
               <div key={t} className={cn(t === "outro" && "lg:col-span-2")}>
                 <DocSlot
                   docType={t}
+                  required={isDocRequired(t, { companyBank })}
+                  hint={companyBank && t === "dados_bancarios" ? COMPANY_BANK_DOC_HINT : undefined}
                   docs={docs.filter((d) => d.docType === t)}
                   uploads={uploads.filter((u) => u.docType === t)}
                   onFiles={(files, replaceId) => onFiles(t, files, replaceId)}
@@ -542,6 +547,7 @@ export function RecordWizard({
               onConfirm={onConfirm}
               onFocusField={onFocusField}
               highlight={issues.filter((i) => i.severity === "error" && !ack.includes(i.id)).flatMap((i) => i.fields)}
+              sectionNotes={companyBank ? { bancarios: COMPANY_BANK_SECTION_NOTE } : undefined}
             />
           </div>
           <aside className="hidden lg:block">

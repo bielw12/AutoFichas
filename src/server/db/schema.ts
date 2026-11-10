@@ -114,6 +114,18 @@ export const companySettings = pgTable(
     footerOnDocuments: boolean().notNull().default(true),
     /** Inclui página "Dados bancários" na ficha do motorista. */
     includeBankPage: boolean().notNull().default(true),
+    /** Origem da página "Dados bancários": "empresa" (padrão das configurações) ou "motorista". */
+    bankSource: text().notNull().default("empresa"),
+    bankName: text().notNull().default(""),
+    bankCode: text().notNull().default(""),
+    bankAgency: text().notNull().default(""),
+    bankAccount: text().notNull().default(""),
+    bankAccountDigit: text().notNull().default(""),
+    bankAccountType: text().notNull().default(""),
+    bankHolderName: text().notNull().default(""),
+    bankHolderDocument: text().notNull().default(""),
+    bankPixType: text().notNull().default(""),
+    bankPixKey: text().notNull().default(""),
     expiryWarningDays: integer().notNull().default(30),
     draftRetentionDays: integer().notNull().default(30),
     trashRetentionDays: integer().notNull().default(90),

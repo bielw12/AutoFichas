@@ -40,6 +40,11 @@ export async function htmlToPdf(html: string): Promise<Buffer> {
   }
 }
 
+/** Inicia o Chromium antecipadamente (o primeiro PDF não espera a inicialização). */
+export async function warmUpBrowser() {
+  await getBrowser();
+}
+
 export async function closeBrowser() {
   const b = await browserPromise?.catch(() => null);
   browserPromise = null;

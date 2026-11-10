@@ -61,7 +61,9 @@ export function RecordDetail({
   versions,
   logs,
   listHref,
+  companyBank = false,
 }: {
+  companyBank?: boolean;
   kind: RecordKind;
   initialTab: string;
   title: string;
@@ -188,11 +190,11 @@ export function RecordDetail({
         </TabsContent>
         {perms.edit && (
           <TabsContent value="editar" className="pt-6">
-            <EditPanel kind={kind} state={state} onSaved={() => changeTab("visao")} />
+            <EditPanel kind={kind} state={state} companyBank={companyBank} onSaved={() => changeTab("visao")} />
           </TabsContent>
         )}
         <TabsContent value="documentos" className="pt-6">
-          <DocumentsPanel kind={kind} state={state} perms={perms} ai={ai} />
+          <DocumentsPanel kind={kind} state={state} perms={perms} ai={ai} companyBank={companyBank} />
         </TabsContent>
         <TabsContent value="pdf" className="pt-6">
           {pdf ? (

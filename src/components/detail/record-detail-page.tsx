@@ -9,7 +9,7 @@ import { requirePageUser } from "@/server/auth/session";
 import { db } from "@/server/db";
 import { auditLogs, users } from "@/server/db/schema";
 import { getVersions } from "@/server/services/records";
-import { getSettings } from "@/server/services/settings";
+import { companyBankActive, getSettings } from "@/server/services/settings";
 import { signedFichaUrl } from "@/server/signed-url";
 import { DomainError } from "@/server/services/records";
 import { maskForUser, recordEditorState } from "@/server/views";
@@ -60,6 +60,7 @@ export async function RecordDetailPage({ kind, id, tab }: { kind: RecordKind; id
         reveal: can(user.role, "sensitive.reveal"),
       }}
       masked={!canEdit}
+      companyBank={kind === "driver" && companyBankActive(settings)}
       ai={{ configured: st.configured, label: st.label, message: st.message, external: st.external, externalEnabled: settings.externalAiEnabled }}
       versions={versions.map((v) => ({
         id: v.id,

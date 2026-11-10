@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { can, type Permission } from "@/lib/permissions";
-import { computeBaseStatus, effectiveStatus, expiryInfo } from "@/lib/status";
+import { requiredDocs } from "@/lib/doc-types";
+import { computeBaseStatus, effectiveStatus, expiryInfo, missingRequiredFields } from "@/lib/status";
 
 const fullDriver = {
   nome: "FULANO",
@@ -29,6 +30,18 @@ describe("situação dos cadastros", () => {
     expect(computeBaseStatus({ kind: "driver", values: { ...fullDriver, cpf: "" }, presentDocs: [...docs], reviewPending: false, isDraft: false })).toBe("incompleto");
     expect(computeBaseStatus({ kind: "driver", values: fullDriver, presentDocs: [...docs], reviewPending: true, isDraft: false })).toBe("aguardando_conferencia");
     expect(computeBaseStatus({ kind: "driver", values: fullDriver, presentDocs: [...docs], reviewPending: false, isDraft: true })).toBe("rascunho");
+  });
+
+  it("com dados bancários padrão da transportadora, os do motorista são opcionais", () => {
+    expect(requiredDocs("driver")).toContain("dados_bancarios");
+    expect(requiredDocs("driver", { companyBank: true })).toEqual(["cnh", "comprovante_residencia"]);
+    expect(requiredDocs("vehicle", { companyBank: true })).toEqual(["crlv", "antt", "foto_veiculo"]);
+    const semBanco = { ...fullDriver, bancoNome: "", conta: "", titularNome: "" };
+    expect(missingRequiredFields("driver", semBanco)).toEqual(expect.arrayContaining(["bancoNome", "conta", "titularNome"]));
+    expect(missingRequiredFields("driver", semBanco, { companyBank: true })).toEqual([]);
+    const docs = ["cnh", "comprovante_residencia"] as const;
+    expect(computeBaseStatus({ kind: "driver", values: semBanco, presentDocs: [...docs], reviewPending: false, isDraft: false })).toBe("documentacao_pendente");
+    expect(computeBaseStatus({ kind: "driver", values: semBanco, presentDocs: [...docs], reviewPending: false, isDraft: false, companyBank: true })).toBe("completo");
   });
 
   it("calcula vencimento sem presumir validade quando a data não existe", () => {

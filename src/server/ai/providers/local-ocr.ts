@@ -34,6 +34,11 @@ async function getWorker(): Promise<TesseractWorker> {
   return workerPromise;
 }
 
+/** Carrega o modelo de OCR antecipadamente (o primeiro processamento fica mais rápido). */
+export async function warmUpOcr() {
+  await getWorker();
+}
+
 async function pdfText(data: Buffer): Promise<string> {
   const { extractText, getDocumentProxy } = await import("unpdf");
   const pdf = await getDocumentProxy(new Uint8Array(data));

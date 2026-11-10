@@ -126,8 +126,19 @@ export const DOC_ORDER: Record<RecordKind, DocType[]> = {
   vehicle: ["crlv", "antt", "foto_veiculo", "outro"],
 };
 
-export function requiredDocs(kind: RecordKind): DocType[] {
-  return DOC_ORDER[kind].filter((d) => DOC_TYPES[d].required);
+/** Regras que dependem das configurações do sistema. */
+export interface RequirementOptions {
+  /** Dados bancários padrão da transportadora em uso: documento bancário do motorista passa a ser opcional. */
+  companyBank?: boolean;
+}
+
+export function isDocRequired(docType: DocType, opts: RequirementOptions = {}): boolean {
+  if (docType === "dados_bancarios" && opts.companyBank) return false;
+  return DOC_TYPES[docType].required;
+}
+
+export function requiredDocs(kind: RecordKind, opts: RequirementOptions = {}): DocType[] {
+  return DOC_ORDER[kind].filter((d) => isDocRequired(d, opts));
 }
 
 export function docTypeAllowedFor(kind: RecordKind, docType: DocType): boolean {
@@ -146,3 +157,7 @@ export const ACCEPTED_MIME: Record<string, string> = {
 
 export const ACCEPT_ATTR = ".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif";
 export const ACCEPT_IMAGES_ATTR = ".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif";
+
+export const COMPANY_BANK_DOC_HINT = "Opcional: a ficha usa os dados bancários padrão da transportadora (Configurações).";
+export const COMPANY_BANK_SECTION_NOTE =
+  "A página \"Dados bancários\" da ficha usa os dados padrão da transportadora (Configurações). Preencha aqui somente se quiser registrar a conta do motorista.";

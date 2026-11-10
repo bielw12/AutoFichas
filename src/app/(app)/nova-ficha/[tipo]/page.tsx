@@ -7,7 +7,7 @@ import { providerStatus } from "@/server/ai/registry";
 import { requirePageUser } from "@/server/auth/session";
 import { maxUploadBytes } from "@/server/env";
 import { DomainError } from "@/server/services/records";
-import { getSettings } from "@/server/services/settings";
+import { companyBankActive, getSettings } from "@/server/services/settings";
 import { recordEditorState, type RecordEditorState } from "@/server/views";
 
 export const metadata: Metadata = { title: "Novo cadastro" };
@@ -37,6 +37,7 @@ export default async function WizardPage({ params, searchParams }: { params: Pro
       kind={kind}
       initial={initial}
       canSaveIncomplete={can(user.role, "records.saveIncomplete")}
+      companyBank={kind === "driver" && companyBankActive(settings)}
       maxUploadMb={Math.round(maxUploadBytes() / 1024 / 1024)}
       ai={{ configured: st.configured, label: st.label, message: st.message, external: st.external, externalEnabled: settings.externalAiEnabled }}
     />

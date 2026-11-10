@@ -10,7 +10,7 @@ import { ConfidenceLegend, RecordForm } from "@/components/record-form";
 import { IssuesPanel } from "@/components/wizard/record-wizard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/primitives";
-import type { RecordKind } from "@/lib/doc-types";
+import { COMPANY_BANK_SECTION_NOTE, type RecordKind } from "@/lib/doc-types";
 import type { FieldMetaMap } from "@/lib/field-meta";
 import { DUPLICATE_KEYS, FIELDS, fieldDef, type FormValues } from "@/lib/fields";
 import { formErrors, toDisplayValues } from "@/lib/form-display";
@@ -19,7 +19,7 @@ import { normalizeInput } from "@/lib/normalize";
 import type { RecordEditorState } from "@/server/views";
 
 /** Edição pontual: altera apenas os campos modificados e gera nova versão. */
-export function EditPanel({ kind, state, onSaved }: { kind: RecordKind; state: RecordEditorState; onSaved: () => void }) {
+export function EditPanel({ kind, state, onSaved, companyBank = false }: { kind: RecordKind; state: RecordEditorState; onSaved: () => void; companyBank?: boolean }) {
   const router = useRouter();
   const initial = useMemo(() => toDisplayValues(kind, state.values), [kind, state.values]);
   const [values, setValues] = useState<FormValues>(initial);
@@ -86,6 +86,7 @@ export function EditPanel({ kind, state, onSaved }: { kind: RecordKind; state: R
             if (src) setViewer({ docType: src, docId: meta[k]?.source?.documentIds?.[0] });
           }}
           highlight={blocking.flatMap((i) => i.fields)}
+          sectionNotes={companyBank ? { bancarios: COMPANY_BANK_SECTION_NOTE } : undefined}
         />
       </div>
       <aside className="hidden lg:block">

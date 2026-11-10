@@ -64,22 +64,25 @@ export async function dashboardData() {
       };
     });
   };
-  const activity = [...(await recentRows("driver")), ...(await recentRows("vehicle"))]
+  const [recentDrivers, recentVehicles] = await Promise.all([recentRows("driver"), recentRows("vehicle")]);
+  const activity = [...recentDrivers, ...recentVehicles]
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 10);
 
   const limit = addDaysISO(todayISO(), wd);
-  const expDrivers = await db
+  const [expDrivers, expVehicles] = await Promise.all([
+    db
     .select()
     .from(drivers)
     .where(and(isNull(drivers.archivedAt), eq(drivers.isDraft, false), sql`${drivers.cnhValidade} <= ${limit}::date`))
     .orderBy(drivers.cnhValidade)
-    .limit(10);
-  const expVehicles = await db
+    .limit(10),
+    db
     .select()
     .from(vehicles)
     .where(and(isNull(vehicles.archivedAt), eq(vehicles.isDraft, false), sql`least(${vehicles.anttValidade}, ${vehicles.licenciamentoValidade}) <= ${limit}::date`))
-    .limit(10);
+    .limit(10),
+  ]);
   const expiring = [
     ...expDrivers.flatMap((r) =>
       expiryInfo("driver", rowToValues("driver", r), wd)

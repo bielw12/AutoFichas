@@ -12,7 +12,9 @@ import { detectMime, EXT_BY_MIME } from "@/server/files/validate";
 import { runAction } from "@/server/http";
 import { runRetention } from "@/server/services/maintenance";
 import { DomainError } from "@/server/services/records";
-import { getSettings } from "@/server/services/settings";
+import { recomputeAllStatuses } from "@/server/services/records";
+import { companyBankActive, getSettings, readSettingsFresh } from "@/server/services/settings";
+import { isValidCpfCnpj } from "@/lib/validators";
 import { createUser, resetUserPassword, updateUser } from "@/server/services/users";
 import { storage, storageKeys } from "@/server/storage";
 
@@ -29,6 +31,22 @@ const settingsSchema = z.object({
   accentColor: hex,
   footerOnDocuments: z.boolean(),
   includeBankPage: z.boolean(),
+  bankSource: z.enum(["empresa", "motorista"]),
+  bankName: z.string().trim().max(120),
+  bankCode: z.string().trim().max(5).transform((v) => v.replace(/\D/g, "")),
+  bankAgency: z.string().trim().max(20),
+  bankAccount: z.string().trim().max(30),
+  bankAccountDigit: z.string().trim().max(3),
+  bankAccountType: z.enum(["", "corrente", "poupanca", "pagamento", "salario"]),
+  bankHolderName: z.string().trim().max(160),
+  bankHolderDocument: z
+    .string()
+    .trim()
+    .max(20)
+    .transform((v) => v.replace(/\D/g, ""))
+    .refine((v) => !v || isValidCpfCnpj(v), "CPF/CNPJ do titular da conta inválido."),
+  bankPixType: z.enum(["", "cpf", "cnpj", "email", "telefone", "aleatoria"]),
+  bankPixKey: z.string().trim().max(120),
   expiryWarningDays: z.coerce.number().int().min(1).max(365),
   draftRetentionDays: z.coerce.number().int().min(1).max(3650),
   trashRetentionDays: z.coerce.number().int().min(1).max(3650),
@@ -41,9 +59,14 @@ export async function updateSettingsAction(input: SettingsInput) {
     const user = await requireUser("settings.manage");
     const parsed = settingsSchema.safeParse(input);
     if (!parsed.success) throw new DomainError(parsed.error.issues[0]?.message ?? "Dados inválidos.");
-    await getSettings();
+    const before = await getSettings();
     await db.update(companySettings).set({ ...parsed.data, updatedBy: user.id, updatedAt: new Date() }).where(eq(companySettings.id, 1));
-    await audit({ user, action: "settings.updated", entityType: "settings", details: { campos: Object.keys(parsed.data) } });
+    // Mudou a regra dos dados bancários? Recalcula a situação das fichas de motoristas.
+    const after = await readSettingsFresh();
+    if (companyBankActive(before) !== companyBankActive(after)) await recomputeAllStatuses("driver");
+    // Auditoria registra só quais campos mudaram (nunca valores bancários)
+    const changed = (Object.keys(parsed.data) as (keyof typeof parsed.data)[]).filter((k) => String(before[k]) !== String(parsed.data[k]));
+    await audit({ user, action: "settings.updated", entityType: "settings", details: { campos: changed } });
     revalidatePath("/", "layout");
   });
 }

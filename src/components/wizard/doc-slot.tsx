@@ -46,7 +46,12 @@ export function DocSlot({
   onView,
   onDismissUpload,
   disabled,
+  required,
+  hint,
 }: {
+  /** Sobrescreve a obrigatoriedade padrão (depende das configurações). */
+  required?: boolean;
+  hint?: string;
   docType: DocType;
   docs: PublicDocument[];
   uploads: PendingUpload[];
@@ -57,6 +62,7 @@ export function DocSlot({
   disabled?: boolean;
 }) {
   const info = DOC_TYPES[docType];
+  const isRequired = required ?? info.required;
   const inputRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
   const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
@@ -83,9 +89,9 @@ export function DocSlot({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-[15px] font-bold">{info.label}</h3>
-            {info.required ? <Badge tone={complete ? "green" : "slate"}>{complete ? "Enviado" : "Obrigatório"}</Badge> : <Badge tone="slate">Opcional</Badge>}
+            {isRequired ? <Badge tone={complete ? "green" : "slate"}>{complete ? "Enviado" : "Obrigatório"}</Badge> : <Badge tone={complete ? "green" : "slate"}>{complete ? "Enviado" : "Opcional"}</Badge>}
           </div>
-          <p className="mt-0.5 text-[13px] text-muted">{info.hint}</p>
+          <p className="mt-0.5 text-[13px] text-muted">{hint ?? info.hint}</p>
         </div>
       </div>
 

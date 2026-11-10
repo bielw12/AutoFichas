@@ -15,6 +15,13 @@
       "when": 1793757328262,
       "tag": "0001_security_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794272379775,
+      "tag": "0002_company_bank",
+      "breakpoints": true
     }
   ]
 }

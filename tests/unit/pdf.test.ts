@@ -4,7 +4,7 @@ import sharp from "sharp";
 import { extractText, getDocumentProxy } from "unpdf";
 import { assembleFicha, winAnsi, type FooterInfo } from "@/server/pdf/assemble";
 import { closeBrowser, htmlToPdf } from "@/server/pdf/render";
-import { bankPageHtml, driverFichaHtml, esc, vehicleFichaHtml } from "@/server/pdf/templates";
+import { bankPageHtml, driverBankData, driverFichaHtml, esc, vehicleFichaHtml } from "@/server/pdf/templates";
 import { emptyValues } from "@/lib/fields";
 
 const footer: FooterInfo = {
@@ -58,7 +58,7 @@ describe("geração do PDF final", () => {
       titularNome: "MOTORISTA FICTICIO DE TESTE",
     };
     const ficha = await htmlToPdf(driverFichaHtml(values, ctx));
-    const bank = await htmlToPdf(bankPageHtml(values, ctx, "Transportadora Fictícia"));
+    const bank = await htmlToPdf(bankPageHtml(driverBankData(values), ctx, "Transportadora Fictícia"));
 
     // Documento original de 2 páginas (uma rotacionada) + uma imagem paisagem
     const src = await PDFDocument.create();

@@ -12,7 +12,7 @@ import { Badge, Card } from "@/components/ui/primitives";
 import { DocSlot, type PendingUpload } from "@/components/wizard/doc-slot";
 import { streamProcessing, uploadFile, type PublicDocument } from "@/components/wizard/client-api";
 import type { AiStatusInfo } from "@/components/wizard/record-wizard";
-import { DOC_ORDER, DOC_TYPES, type DocType, type RecordKind } from "@/lib/doc-types";
+import { COMPANY_BANK_DOC_HINT, DOC_ORDER, DOC_TYPES, isDocRequired, type DocType, type RecordKind } from "@/lib/doc-types";
 import type { ExtractionSummary } from "@/lib/extraction-types";
 import { STATUS_STYLE } from "@/lib/field-meta";
 import { fieldDef, fieldLabel } from "@/lib/fields";
@@ -21,7 +21,7 @@ import { buildProposals, diffProposals, type ProposalDiff } from "@/lib/merge";
 import type { RecordEditorState } from "@/server/views";
 import type { DetailPerms } from "./record-detail";
 
-export function DocumentsPanel({ kind, state, perms, ai }: { kind: RecordKind; state: RecordEditorState; perms: DetailPerms; ai: AiStatusInfo }) {
+export function DocumentsPanel({ kind, state, perms, ai, companyBank = false }: { kind: RecordKind; state: RecordEditorState; perms: DetailPerms; ai: AiStatusInfo; companyBank?: boolean }) {
   const router = useRouter();
   const [docs, setDocs] = useState<PublicDocument[]>(state.documents);
   const [uploads, setUploads] = useState<PendingUpload[]>([]);
@@ -147,6 +147,8 @@ export function DocumentsPanel({ kind, state, perms, ai }: { kind: RecordKind; s
               {perms.upload ? (
                 <DocSlot
                   docType={t}
+                  required={isDocRequired(t, { companyBank })}
+                  hint={companyBank && t === "dados_bancarios" ? COMPANY_BANK_DOC_HINT : undefined}
                   docs={list}
                   uploads={uploads.filter((u) => u.docType === t)}
                   onFiles={(files, replaceId) => onFiles(t, files, replaceId)}

@@ -1,4 +1,4 @@
-import { DOC_TYPES, requiredDocs, type DocType, type RecordKind } from "./doc-types";
+import { DOC_TYPES, requiredDocs, type DocType, type RecordKind, type RequirementOptions } from "./doc-types";
 import { EXPIRY_FIELDS, FIELDS, type FormValues } from "./fields";
 import { addDaysISO, diffDaysISO, todayISO } from "./validators";
 
@@ -52,9 +52,10 @@ export function expiryInfo(kind: RecordKind, v: Partial<FormValues>, warningDays
   return out;
 }
 
-export function missingRequiredFields(kind: RecordKind, v: Partial<FormValues>): string[] {
+export function missingRequiredFields(kind: RecordKind, v: Partial<FormValues>, opts: RequirementOptions = {}): string[] {
   const missing = FIELDS[kind].filter((f) => f.required && !(v[f.key] ?? "").toString().trim()).map((f) => f.key);
-  if (kind === "driver") {
+  // Com os dados bancários padrão da transportadora, os do motorista são opcionais
+  if (kind === "driver" && !opts.companyBank) {
     // Dados bancários: exige banco + titular + (conta ou chave PIX)
     const hasAccount = !!(v.conta || v.pixChave);
     if (!v.bancoNome && !v.pixChave) missing.push("bancoNome");
@@ -64,8 +65,8 @@ export function missingRequiredFields(kind: RecordKind, v: Partial<FormValues>):
   return Array.from(new Set(missing));
 }
 
-export function missingDocs(kind: RecordKind, present: DocType[]): DocType[] {
-  return requiredDocs(kind).filter((d) => !present.includes(d));
+export function missingDocs(kind: RecordKind, present: DocType[], opts: RequirementOptions = {}): DocType[] {
+  return requiredDocs(kind, opts).filter((d) => !present.includes(d));
 }
 
 export function computeBaseStatus(args: {
@@ -74,10 +75,12 @@ export function computeBaseStatus(args: {
   presentDocs: DocType[];
   reviewPending: boolean;
   isDraft: boolean;
+  companyBank?: boolean;
 }): BaseStatus {
+  const opts = { companyBank: args.companyBank };
   if (args.isDraft) return "rascunho";
-  if (missingDocs(args.kind, args.presentDocs).length) return "documentacao_pendente";
-  if (missingRequiredFields(args.kind, args.values).length) return "incompleto";
+  if (missingDocs(args.kind, args.presentDocs, opts).length) return "documentacao_pendente";
+  if (missingRequiredFields(args.kind, args.values, opts).length) return "incompleto";
   if (args.reviewPending) return "aguardando_conferencia";
   return "completo";
 }

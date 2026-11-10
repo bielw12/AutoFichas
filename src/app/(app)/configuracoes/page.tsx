@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/common";
 import { SettingsView } from "@/components/settings/settings-view";
+import { formatCpfCnpj } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { providerStatus } from "@/server/ai/registry";
 import { requirePageUser } from "@/server/auth/session";
@@ -28,7 +29,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         currentUserId={user.id}
         settings={{
           companyName: s.companyName,
-          cnpj: s.cnpj,
+          cnpj: formatCpfCnpj(s.cnpj),
           phones: s.phones,
           emails: s.emails,
           website: s.website,
@@ -38,6 +39,17 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           accentColor: s.accentColor,
           footerOnDocuments: s.footerOnDocuments,
           includeBankPage: s.includeBankPage,
+          bankSource: s.bankSource === "motorista" ? "motorista" : "empresa",
+          bankName: s.bankName,
+          bankCode: s.bankCode,
+          bankAgency: s.bankAgency,
+          bankAccount: s.bankAccount,
+          bankAccountDigit: s.bankAccountDigit,
+          bankAccountType: (["corrente", "poupanca", "pagamento", "salario"].includes(s.bankAccountType) ? s.bankAccountType : "") as "",
+          bankHolderName: s.bankHolderName,
+          bankHolderDocument: formatCpfCnpj(s.bankHolderDocument),
+          bankPixType: (["cpf", "cnpj", "email", "telefone", "aleatoria"].includes(s.bankPixType) ? s.bankPixType : "") as "",
+          bankPixKey: s.bankPixKey,
           expiryWarningDays: s.expiryWarningDays,
           draftRetentionDays: s.draftRetentionDays,
           trashRetentionDays: s.trashRetentionDays,

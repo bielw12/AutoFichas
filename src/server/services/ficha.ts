@@ -8,10 +8,10 @@ import { db } from "../db";
 import { recordVersions, type CompanySettings } from "../db/schema";
 import { assembleFicha, type FooterInfo } from "../pdf/assemble";
 import { htmlToPdf } from "../pdf/render";
-import { bankPageHtml, driverFichaHtml, hasBankData, vehicleFichaHtml, type FichaContext } from "../pdf/templates";
+import { bankPageHtml, driverBankData, driverFichaHtml, hasBankData, vehicleFichaHtml, type FichaContext } from "../pdf/templates";
 import { storage, storageKeys } from "../storage";
 import { listCurrentDocuments, ownerCols, requireRecord, rowToValues, tableFor, valuesToColumns } from "./records";
-import { getLogo, getSettings } from "./settings";
+import { companyBankActive, companyBankData, getLogo, getSettings } from "./settings";
 
 function splitList(s: string): string[] {
   return s
@@ -63,8 +63,10 @@ export async function generateFicha(kind: RecordKind, id: string, user: SessionU
   const fichaHtml = kind === "driver" ? driverFichaHtml(values, ctx) : vehicleFichaHtml(values, ctx);
   const fichaPdf = await htmlToPdf(fichaHtml);
   const insertBefore: Partial<Record<DocType, Buffer>> = {};
-  if (kind === "driver" && settings.includeBankPage && hasBankData(values)) {
-    insertBefore.dados_bancarios = await htmlToPdf(bankPageHtml(values, ctx, settings.companyName));
+  if (kind === "driver" && settings.includeBankPage) {
+    // Dados bancários padrão da transportadora (Configurações) ou, se desativado, os do motorista
+    const bank = companyBankActive(settings) ? companyBankData(settings) : hasBankData(values) ? driverBankData(values) : null;
+    if (bank) insertBefore.dados_bancarios = await htmlToPdf(bankPageHtml(bank, ctx, settings.companyName));
   }
 
   const order = DOC_ORDER[kind];

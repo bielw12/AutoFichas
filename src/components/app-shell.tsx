@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ChevronsUpDown, MonitorSmartphone, FilePlus2, KeyRound, LayoutDashboard, LogOut, Menu, Settings, Trash2, Truck, UserRound, X } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Wordmark } from "@/components/logo-mark";
+import { NavigationProgress } from "@/components/navigation-progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, TooltipProvider } from "@/components/ui/overlays";
 import { ROLE_LABELS, type Role } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,7 @@ export function AppShell({
 
   return (
     <TooltipProvider>
+      <NavigationProgress />
       <div className="min-h-dvh lg:pl-[264px]">
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] bg-brand-900 lg:block">{sidebar}</aside>
         {open && (

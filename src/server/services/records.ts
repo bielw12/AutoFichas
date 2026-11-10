@@ -13,7 +13,7 @@ import type { SessionUser } from "../auth/session";
 import { db } from "../db";
 import { documents, drivers, extractionResults, recordVersions, vehicles, type DocumentRow, type DriverRow, type VehicleRow } from "../db/schema";
 import { storage } from "../storage";
-import { getSettings } from "./settings";
+import { companyBankActive, getSettings, readSettingsFresh } from "./settings";
 
 export type AnyRecordRow = DriverRow | VehicleRow;
 type AnyTable = typeof drivers | typeof vehicles;
@@ -178,7 +178,7 @@ export async function findDuplicates(kind: RecordKind, values: Partial<FormValue
 
 // ----------------------------------------------------------------- Status
 
-export async function recomputeStatus(kind: RecordKind, id: string): Promise<BaseStatus> {
+export async function recomputeStatus(kind: RecordKind, id: string, opts: { companyBank?: boolean } = {}): Promise<BaseStatus> {
   const row = await requireRecord(kind, id, { includeArchived: true });
   const docs = await listCurrentDocuments(kind, id);
   const base = computeBaseStatus({
@@ -187,10 +187,20 @@ export async function recomputeStatus(kind: RecordKind, id: string): Promise<Bas
     presentDocs: Array.from(new Set(docs.map((d) => d.docType))),
     reviewPending: row.reviewPending,
     isDraft: row.isDraft,
+    companyBank: opts.companyBank ?? companyBankActive(await getSettings()),
   });
   const t = tableFor(kind);
   await db.update(t).set({ baseStatus: base }).where(eq(t.id, id));
   return base;
+}
+
+/** Recalcula a situação de todas as fichas (ex.: após mudar regras nas configurações). */
+export async function recomputeAllStatuses(kind: RecordKind) {
+  const t = tableFor(kind);
+  const companyBank = companyBankActive(await readSettingsFresh());
+  const rows = await db.select({ id: t.id }).from(t).where(eq(t.isDraft, false));
+  for (const r of rows) await recomputeStatus(kind, r.id, { companyBank });
+  return rows.length;
 }
 
 export async function recordStatusInfo(kind: RecordKind, row: AnyRecordRow) {
@@ -265,7 +275,7 @@ export async function finalizeRecord(
 
   const docs = await listCurrentDocuments(kind, id);
   const present = Array.from(new Set(docs.map((d) => d.docType)));
-  const base = computeBaseStatus({ kind, values: values, presentDocs: present, reviewPending: false, isDraft: false });
+  const base = computeBaseStatus({ kind, values: values, presentDocs: present, reviewPending: false, isDraft: false, companyBank: companyBankActive(await getSettings()) });
   if (base === "documentacao_pendente" && !opts.allowMissingDocs) {
     throw new DomainError("Envie todos os documentos obrigatórios antes de salvar a ficha.", "invalid");
   }

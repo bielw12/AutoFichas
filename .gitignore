@@ -16,3 +16,4 @@ next-env.d.ts
 /storage-test/
 /storage-e2e/
 *.tmp.ts
+*.tmp.mjs
